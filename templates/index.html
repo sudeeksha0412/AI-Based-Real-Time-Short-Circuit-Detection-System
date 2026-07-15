@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚡ Short Circuit Alert Dashboard</title>
+<style>
+  body {
+    font-family: Arial;
+    background:#f3f4f6;
+    color:#333;
+    margin:0;
+    display:flex;
+    min-height:100vh;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width:220px;
+    background:#2c3e50;
+    color:white;
+    height:100vh;
+    padding:20px;
+    display:flex;
+    flex-direction:column;
+    gap:15px;
+    transition:transform .3s ease-in-out;
+    
+    
+  }
+
+  .sidebar h2 { text-align:center; font-size:18px; margin:0 0 10px; }
+  .sidebar button {
+    background:#34495e;
+    border:none;
+    color:white;
+    padding:10px;
+    border-radius:6px;
+    cursor:pointer;
+    transition:background .2s;
+    font-weight:bold;
+  }
+  .sidebar button:hover { background:#1abc9c; }
+
+  /* Hamburger menu */
+  .hamburger {
+    display:none;
+    position:fixed;
+    top:15px;
+    left:15px;
+    background:#2c3e50;
+    color:white;
+    border:none;
+    font-size:22px;
+    padding:8px 12px;
+    border-radius:6px;
+    cursor:pointer;
+    z-index:1001;
+  }
+
+  /* Main content */
+  .main { flex:1; padding:24px; overflow-y:auto; }
+  h1 { text-align:center; color:#c0392b; margin-top:0; }
+
+  .alert-card {
+    background:white;
+    border-left:6px solid #c0392b;
+    padding:15px;
+    margin-bottom:20px;
+    border-radius:10px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.08);
+  }
+  .alert-meta b { display:block; margin-bottom:4px; }
+  a { color:#2980b9; text-decoration:none; }
+  .thumb { max-width:300px; border-radius:10px; margin-top:10px; display:block; cursor:zoom-in; }
+  .status-badge { display:inline-block; padding:4px 8px; border-radius:4px; font-size:11px; font-weight:bold; margin-top:8px; }
+  .status-pending { background:#f8f9fa; color:#666; }
+  .status-checked { background:#d4edda; color:#155724; }
+  .status-reminded { background:#fff3cd; color:#856404; }
+  .btn-group { margin-top:10px; display:flex; flex-wrap:wrap; gap:8px; }
+  button.action { padding:8px 14px; border:none; border-radius:6px; cursor:pointer; font-size:14px; font-weight:bold; transition:all .2s; }
+  .btn-checked { background:#28a745; color:white; }
+  .btn-remind { background:#007bff; color:white; }
+  .btn-delete { background:#dc3545; color:white; }
+  .hidden { display:none; }
+  .no-alert { text-align:center; margin-top:40px; color:#777; font-size:16px; }
+
+  /* Modal */
+  .modal { position:fixed; inset:0; background:rgba(10,10,10,0.75); display:none; align-items:center; justify-content:center; z-index:9999; }
+  .modal.show { display:flex; }
+  .modal-content { position:relative; max-width:95%; max-height:95%; overflow:hidden; border-radius:8px; }
+  .modal-img { max-width:none; will-change:transform; user-select:none; cursor:grab; display:block; max-height:90vh; }
+  .modal-close { position:absolute; top:8px; right:10px; color:white; background:rgba(0,0,0,0.25); border:none; padding:6px 8px; border-radius:6px; font-size:16px; cursor:pointer; }
+
+  /* Mobile responsiveness */
+@media (max-width: 768px) {
+    body { flex-direction:column; }
+
+    .sidebar {
+      position:fixed;
+      top:0;
+      left:0;
+      height:100%;
+      transform:translateX(-100%);
+      z-index:1000;
+      width:200px;
+    }
+
+    /* When hamburger is clicked, show sidebar */
+    .sidebar.show {
+      transform:translateX(0);
+    }
+
+    .main {
+      padding:80px 16px;
+    }
+
+    .hamburger { display:block; }
+}
+</style>
+
+</head>
+<body>
+<button class="hamburger" onclick="toggleSidebar()">☰</button>
+
+<div class="sidebar">
+  <h2>📂 Alerts</h2>
+  <button onclick="showSection('dashboard')">📋 Dashboard</button>
+  <button onclick="showSection('checked')">✅ Checked</button>
+  <button onclick="showSection('reminded')">🔔 Reminded</button>
+  <button onclick="showSection('deleted')">🗑 Deleted</button>
+</div>
+
+<div class="main">
+  <h1>⚠ Short Circuit Alert Dashboard</h1>
+
+  <!-- Dashboard -->
+  <div id="dashboard" class="section">
+    {% set has_alert = false %}
+    {% for alert in alerts %}
+      {% if alert.status == 'pending' %}
+        {% set has_alert = true %}
+        <div class="alert-card">
+          <div class="alert-meta">
+            <b>🕒 {{ alert.time }}</b>
+            <b>📍 {{ alert.pole }}</b>
+            <b>🌐 <a href="{{ alert.location }}" target="_blank">View Location</a></b>
+          </div>
+          <p>{{ alert.message }}</p>
+          {% if alert.image %}
+          <img class="thumb" src="{{ alert.image }}" onclick="openModal(this)">
+          {% endif %}
+          <div class="status-badge status-pending">📋 Pending</div>
+          <div class="btn-group">
+            <button class="action btn-checked" onclick="updateStatus({{ loop.index0 }}, 'checked')">✓ Checked</button>
+            <button class="action btn-remind" onclick="updateStatus({{ loop.index0 }}, 'reminded')">🔔 Remind</button>
+            <button class="action btn-delete" onclick="updateStatus({{ loop.index0 }}, 'deleted')">🗑 Delete</button>
+          </div>
+        </div>
+      {% endif %}
+    {% endfor %}
+    {% if not has_alert %}
+      <p id="noAlerts" class="no-alert">📭 No alert messages yet.</p>
+    {% endif %}
+  </div>
+
+  <!-- Checked -->
+  <div id="checked" class="section hidden">
+    {% for alert in alerts if alert.status == 'checked' %}
+      <div class="alert-card">
+        <div class="alert-meta">
+          <b>🕒 {{ alert.time }}</b>
+          <b>📍 {{ alert.pole }}</b>
+          <b>🌐 <a href="{{ alert.location }}" target="_blank">View Location</a></b>
+        </div>
+        <p>{{ alert.message }}</p>
+        {% if alert.image %}
+        <img class="thumb" src="{{ alert.image }}" onclick="openModal(this)">
+        {% endif %}
+        <div class="status-badge status-checked">✅ Checked</div>
+      </div>
+    {% else %}
+      <p class="no-alert">📭 No checked alerts yet.</p>
+    {% endfor %}
+  </div>
+
+  <!-- Reminded -->
+  <div id="reminded" class="section hidden">
+    {% for alert in alerts if alert.status == 'reminded' %}
+      <div class="alert-card">
+        <div class="alert-meta">
+          <b>🕒 {{ alert.time }}</b>
+          <b>📍 {{ alert.pole }}</b>
+          <b>🌐 <a href="{{ alert.location }}" target="_blank">View Location</a></b>
+        </div>
+        <p>{{ alert.message }}</p>
+        {% if alert.image %}
+        <img class="thumb" src="{{ alert.image }}" onclick="openModal(this)">
+        {% endif %}
+        <div class="status-badge status-reminded">🔔 Reminded</div>
+      </div>
+    {% else %}
+      <p class="no-alert">📭 No reminders set.</p>
+    {% endfor %}
+  </div>
+
+  <!-- Deleted -->
+  <div id="deleted" class="section hidden">
+    {% for alert in alerts if alert.status == 'deleted' %}
+      <div class="alert-card">
+        <div class="alert-meta">
+          <b>🕒 {{ alert.time }}</b>
+          <b>📍 {{ alert.pole }}</b>
+          <b>🌐 <a href="{{ alert.location }}" target="_blank">View Location</a></b>
+        </div>
+        <p>{{ alert.message }}</p>
+        {% if alert.image %}
+        <img class="thumb" src="{{ alert.image }}" onclick="openModal(this)">
+        {% endif %}
+        <div class="status-badge status-pending">🗑 Deleted</div>
+      </div>
+    {% else %}
+      <p class="no-alert">📭 No deleted alerts yet.</p>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Modal -->
+<div id="imgModal" class="modal">
+  <div class="modal-content">
+    <button id="closeBtn" class="modal-close">✕</button>
+    <img id="modalImg" class="modal-img" src="">
+  </div>
+</div>
+
+<script>
+let activeSection = 'dashboard';
+const sections = {
+  dashboard: document.getElementById('dashboard'),
+  checked: document.getElementById('checked'),
+  reminded: document.getElementById('reminded'),
+  deleted: document.getElementById('deleted')
+};
+
+function showSection(name) {
+  for (const key in sections) sections[key].classList.add('hidden');
+  sections[name].classList.remove('hidden');
+  activeSection = name;
+}
+
+async function updateStatus(index, status) {
+  await fetch("/update_status", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({index, status})
+  });
+  location.reload();
+}
+
+// Modal
+const modal = document.getElementById('imgModal');
+const modalImg = document.getElementById('modalImg');
+const closeBtn = document.getElementById('closeBtn');
+
+function openModal(img) {
+  modalImg.src = img.src;
+  modal.classList.add('show');
+}
+closeBtn.onclick = () => modal.classList.remove('show');
+modal.onclick = e => { if(e.target===modal) modal.classList.remove('show'); };
+function toggleSidebar() {
+  document.querySelector('.sidebar').classList.toggle('show');
+}
+document.addEventListener("DOMContentLoaded", () => {
+  const hasAlerts = document.querySelectorAll('.alert-card').length > 0;
+  const noAlerts = document.getElementById('noAlerts');
+  if (hasAlerts) {
+    noAlerts.style.display = "none";
+  } else {
+    noAlerts.style.display = "block";
+  }
+});
+</script>
+</body>
+</html>

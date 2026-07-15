@@ -1,0 +1,7 @@
+train: E:\TheCodingBug\yolov_11_custom\train
+
+val: E:\TheCodingBug\yolov_11_custom\val
+
+nc: 1
+
+names: ['short-circuit']

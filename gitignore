@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual Environment
+venv/
+.env
+
+# YOLO training outputs
+runs/
+
+# Temporary files
+detected_frame.jpg
+*.log
+*.cache
+
+# Generated alerts
+received_alerts/
+
+# VS Code
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db

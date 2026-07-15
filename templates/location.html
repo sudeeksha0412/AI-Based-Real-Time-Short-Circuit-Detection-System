@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Send Live GPS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body style="font-family:Arial;text-align:center;padding-top:40px;">
+
+<h2>📍 Sending Your Live GPS Location...</h2>
+<p id="status" style="font-size:18px;color:#444;">Requesting GPS...</p>
+
+<script>
+// --- Send location to Flask ---
+function sendLocation(lat, lon) {
+  fetch("http://192.168.40.86:5000/mobile_location", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({lat: lat, lon: lon})
+  })
+  .then(res => res.json())
+  .then(data => {
+    document.getElementById("status").innerHTML =
+      `<span style="color:green;font-size:20px;">✔ Location Sent Successfully!</span><br><br>
+       Latitude: ${lat}<br>Longitude: ${lon}`;
+  })
+  .catch(err => {
+    document.getElementById("status").innerHTML =
+      `<span style="color:red;">❌ Failed to send location: ${err}</span>`;
+  });
+}
+
+
+// --- Request GPS from Mobile ---
+navigator.geolocation.getCurrentPosition(
+  // SUCCESS
+  (pos) => {
+    let lat = pos.coords.latitude;
+    let lon = pos.coords.longitude;
+
+    document.getElementById("status").innerHTML =
+      `📍 GPS Received<br><br>
+       Latitude: ${lat}<br>
+       Longitude: ${lon}<br><br>
+       Sending to server...`;
+
+    sendLocation(lat, lon);
+  },
+
+  // ERROR
+  (err) => {
+    document.getElementById("status").innerHTML =
+      `<span style="color:red;font-size:18px;">❌ GPS Permission Denied</span><br><br>
+       Please enable GPS and reload.`;
+  },
+
+  // OPTIONS
+  {
+    enableHighAccuracy: true,
+    timeout: 10000,
+    maximumAge: 0
+  }
+);
+</script>
+
+</body>
+</html>
